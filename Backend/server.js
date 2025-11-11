@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-import express from 'express';
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.send('Hello, world!');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-=======
 // --- Dependencies ---
 const express = require('express');
 const mongoose = require('mongoose');
@@ -318,5 +304,4 @@ app.use('/api', apiRouter);
 app.listen(PORT, () => {
     console.log(`UdeC Alumni Mailing Service REST API running on http://localhost:${PORT}`);
     console.log(`Available endpoints: /api/auth/register, /api/auth/login, /api/alumni/profile, etc.`);
->>>>>>> cee863c (first attempt at making proper structure)
 });
