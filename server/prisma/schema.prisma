@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ALUMNI
+  SCHOOL
+}
+
+enum EmploymentStatus {
+  EMPLOYED
+  UNEMPLOYED
+  SEARCHING
+  FREELANCE
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  role          Role
+  alumniProfile AlumniProfile?
+  school        School?        @relation(fields: [schoolId], references: [id])
+  schoolId      String?
+  surveys       Survey[]       @relation("SurveyCreatedBy")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model AlumniProfile {
+  id               String          @id @default(cuid())
+  user             User            @relation(fields: [userId], references: [id])
+  userId           String          @unique
+  fullName         String
+  phone            String?
+  graduationYear   Int
+  major            String
+  studentId        String?         @unique
+  currentJobTitle  String?
+  currentCompany   String?
+  employmentStatus EmploymentStatus
+  school           School          @relation(fields: [schoolId], references: [id])
+  schoolId         String
+  isApproved       Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model School {
+  id            String          @id @default(cuid())
+  name          String          @unique
+  description   String?
+  contactPerson String?
+  alumni        AlumniProfile[]
+  users         User[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Survey {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  createdBy   User      @relation("SurveyCreatedBy", fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
