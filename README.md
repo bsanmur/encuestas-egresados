@@ -56,31 +56,610 @@ npm run dev
 
 Access client at http://localhost:5173 and API at http://localhost:4000/api.
 
+## API Documentation
+
+### Authentication
+
+All protected endpoints require a JWT token in the Authorization header:
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+After successful login or registration, you'll receive a token in the response that should be stored and sent with subsequent requests.
+
+---
+
+## API Endpoints Quick Reference
+
+### Public Endpoints (No Authentication Required)
+- `POST /api/auth/register` - Register a new alumni user
+- `POST /api/auth/login` - Authenticate and receive JWT token
+- `POST /api/auth/forgot-password` - Request password reset
+
+### Admin Endpoints (Requires ADMIN role)
+- `GET /api/admin/alumni` - Get all alumni profiles
+- `PUT /api/admin/alumni/:id` - Update an alumni profile
+- `DELETE /api/admin/alumni/:id` - Delete an alumni profile
+- `PUT /api/admin/alumni/approve/:id` - Approve an alumni profile
+- `GET /api/admin/schools` - Get all schools
+- `POST /api/admin/schools` - Create a new school
+- `PUT /api/admin/schools/:id` - Update a school
+- `DELETE /api/admin/schools/:id` - Delete a school
+- `POST /api/admin/schools/assign-user` - Assign user to school
+- `GET /api/admin/analytics/global` - Get global analytics
+- `POST /api/admin/surveys` - Create a new survey
+
+### Alumni Endpoints (Requires ALUMNI role)
+- `GET /api/alumni/profile/me` - Get own profile
+- `PUT /api/alumni/profile/me` - Update own profile
+
+### School Endpoints (Requires SCHOOL role)
+- `GET /api/school/dashboard/analytics` - Get school analytics
+
+---
+
 ## Core API Endpoints
-Auth:
-- POST /api/auth/register
-- POST /api/auth/login
-- POST /api/auth/forgot-password
 
-Admin (requires ADMIN):
-- GET /api/admin/alumni
-- PUT /api/admin/alumni/:id
-- DELETE /api/admin/alumni/:id
-- PUT /api/admin/alumni/approve/:id
-- GET /api/admin/schools
-- POST /api/admin/schools
-- PUT /api/admin/schools/:id
-- DELETE /api/admin/schools/:id
-- POST /api/admin/schools/assign-user
-- GET /api/admin/analytics/global
-- POST /api/admin/surveys
+### Auth Endpoints (Public)
 
-Alumni (requires ALUMNI):
-- GET /api/alumni/profile/me
-- PUT /api/alumni/profile/me
+#### POST /api/auth/register
+Register a new alumni user.
 
-School (requires SCHOOL):
-- GET /api/school/dashboard/analytics
+**Request Body:**
+```json
+{
+  "email": "alumni@example.com",
+  "password": "securePassword123",
+  "fullName": "John Doe",
+  "phone": "+1234567890",
+  "graduationYear": 2020,
+  "major": "Computer Science",
+  "studentId": "STU123456",
+  "currentJobTitle": "Software Engineer",
+  "currentCompany": "Tech Corp",
+  "employmentStatus": "EMPLOYED",
+  "schoolId": "school-id-here"
+}
+```
+
+**Required Fields:** `email`, `password`, `fullName`, `graduationYear`, `major`, `schoolId`, `employmentStatus`
+
+**Response (201):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user-id",
+    "email": "alumni@example.com",
+    "role": "ALUMNI"
+  }
+}
+```
+
+**Error Responses:**
+- `400` - Missing required fields
+- `409` - Email already in use
+- `500` - Server error
+
+---
+
+#### POST /api/auth/login
+Authenticate and receive a JWT token.
+
+**Request Body:**
+```json
+{
+  "email": "alumni@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user-id",
+    "email": "alumni@example.com",
+    "role": "ALUMNI"
+  }
+}
+```
+
+**Error Responses:**
+- `401` - Invalid credentials
+- `500` - Server error
+
+---
+
+#### POST /api/auth/forgot-password
+Request password reset (placeholder implementation).
+
+**Request Body:**
+```json
+{
+  "email": "alumni@example.com"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "If the email exists, password reset instructions will be sent."
+}
+```
+
+---
+
+### Admin Endpoints (Requires ADMIN role)
+
+#### GET /api/admin/alumni
+Get list of all alumni profiles.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Response (200):**
+```json
+[
+  {
+    "id": "profile-id",
+    "fullName": "John Doe",
+    "phone": "+1234567890",
+    "graduationYear": 2020,
+    "major": "Computer Science",
+    "studentId": "STU123456",
+    "currentJobTitle": "Software Engineer",
+    "currentCompany": "Tech Corp",
+    "employmentStatus": "EMPLOYED",
+    "schoolId": "school-id",
+    "isApproved": false,
+    "user": {
+      "id": "user-id",
+      "email": "alumni@example.com",
+      "role": "ALUMNI"
+    },
+    "school": {
+      "id": "school-id",
+      "name": "University Name"
+    },
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+---
+
+#### PUT /api/admin/alumni/:id
+Update an alumni profile.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Request Body (all fields optional):**
+```json
+{
+  "fullName": "John Updated",
+  "phone": "+9876543210",
+  "graduationYear": 2021,
+  "major": "Data Science",
+  "studentId": "STU789012",
+  "currentJobTitle": "Senior Engineer",
+  "currentCompany": "New Corp",
+  "employmentStatus": "EMPLOYED",
+  "schoolId": "new-school-id",
+  "isApproved": true
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": "profile-id",
+  "fullName": "John Updated",
+  ...
+}
+```
+
+**Error Responses:**
+- `400` - Update failed
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### DELETE /api/admin/alumni/:id
+Delete an alumni profile.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "deletedId": "profile-id"
+}
+```
+
+**Error Responses:**
+- `400` - Delete failed
+- `401` - Unauthorized
+
+---
+
+#### PUT /api/admin/alumni/approve/:id
+Approve an alumni profile.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Response (200):**
+```json
+{
+  "id": "profile-id",
+  "isApproved": true,
+  ...
+}
+```
+
+**Error Responses:**
+- `400` - Approve failed
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### GET /api/admin/schools
+Get list of all schools.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Response (200):**
+```json
+[
+  {
+    "id": "school-id",
+    "name": "University Name",
+    "description": "School description",
+    "contactPerson": "Contact Name",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+**Error Responses:**
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### POST /api/admin/schools
+Create a new school.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Request Body:**
+```json
+{
+  "name": "University Name",
+  "description": "School description (optional)",
+  "contactPerson": "Contact Name (optional)"
+}
+```
+
+**Response (201):**
+```json
+{
+  "id": "school-id",
+  "name": "University Name",
+  "description": "School description",
+  "contactPerson": "Contact Name",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- `400` - Create failed (e.g., duplicate school name)
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### PUT /api/admin/schools/:id
+Update a school.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Request Body:**
+```json
+{
+  "name": "Updated University Name",
+  "description": "Updated description",
+  "contactPerson": "Updated Contact"
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": "school-id",
+  "name": "Updated University Name",
+  ...
+}
+```
+
+**Error Responses:**
+- `400` - Update failed
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### DELETE /api/admin/schools/:id
+Delete a school.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "deletedId": "school-id"
+}
+```
+
+**Error Responses:**
+- `400` - Delete failed
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### POST /api/admin/schools/assign-user
+Assign a user to a school and change their role to SCHOOL.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Request Body:**
+```json
+{
+  "userId": "user-id",
+  "schoolId": "school-id"
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": "user-id",
+  "email": "user@example.com",
+  "role": "SCHOOL",
+  "schoolId": "school-id"
+}
+```
+
+**Error Responses:**
+- `400` - userId and schoolId required, or assign failed
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### GET /api/admin/analytics/global
+Get global analytics for all alumni.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Response (200):**
+```json
+{
+  "totalAlumni": 150,
+  "employmentRate": 85,
+  "topSectors": [
+    { "name": "Computer Science", "count": 45 },
+    { "name": "Engineering", "count": 30 },
+    { "name": "Business", "count": 25 }
+  ]
+}
+```
+
+**Error Responses:**
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+#### POST /api/admin/surveys
+Create a new survey.
+
+**Headers:**
+```
+Authorization: Bearer <admin-jwt-token>
+```
+
+**Request Body:**
+```json
+{
+  "title": "2024 Alumni Survey",
+  "description": "Annual survey for all alumni (optional)"
+}
+```
+
+**Required Fields:** `title`
+
+**Response (201):**
+```json
+{
+  "id": "survey-id",
+  "title": "2024 Alumni Survey",
+  "description": "Annual survey for all alumni",
+  "createdById": "admin-user-id",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- `400` - title required, or create failed
+- `401` - Unauthorized (not admin)
+- `500` - Server error
+
+---
+
+### Alumni Endpoints (Requires ALUMNI role)
+
+#### GET /api/alumni/profile/me
+Get the authenticated alumni's own profile.
+
+**Headers:**
+```
+Authorization: Bearer <alumni-jwt-token>
+```
+
+**Response (200):**
+```json
+{
+  "id": "profile-id",
+  "userId": "user-id",
+  "fullName": "John Doe",
+  "phone": "+1234567890",
+  "graduationYear": 2020,
+  "major": "Computer Science",
+  "studentId": "STU123456",
+  "currentJobTitle": "Software Engineer",
+  "currentCompany": "Tech Corp",
+  "employmentStatus": "EMPLOYED",
+  "schoolId": "school-id",
+  "isApproved": false,
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- `404` - Profile not found
+- `401` - Unauthorized
+
+---
+
+#### PUT /api/alumni/profile/me
+Update the authenticated alumni's own profile (limited fields).
+
+**Headers:**
+```
+Authorization: Bearer <alumni-jwt-token>
+```
+
+**Request Body (all fields optional):**
+```json
+{
+  "phone": "+9876543210",
+  "currentJobTitle": "Senior Software Engineer",
+  "currentCompany": "New Company",
+  "employmentStatus": "EMPLOYED"
+}
+```
+
+**Note:** Alumni can only update: `phone`, `currentJobTitle`, `currentCompany`, `employmentStatus`
+
+**Response (200):**
+```json
+{
+  "id": "profile-id",
+  "phone": "+9876543210",
+  "currentJobTitle": "Senior Software Engineer",
+  ...
+}
+```
+
+**Error Responses:**
+- `400` - Update failed
+- `401` - Unauthorized
+
+---
+
+### School Endpoints (Requires SCHOOL role)
+
+#### GET /api/school/dashboard/analytics
+Get analytics for the school associated with the authenticated user.
+
+**Headers:**
+```
+Authorization: Bearer <school-jwt-token>
+```
+
+**Response (200):**
+```json
+{
+  "employmentRate": 90,
+  "avgSalary": null,
+  "topSectors": [
+    { "name": "Computer Science", "count": 20 },
+    { "name": "Engineering", "count": 15 }
+  ]
+}
+```
+
+**Error Responses:**
+- `400` - User is not linked to a school
+- `401` - Unauthorized
+- `500` - Server error
+
+---
+
+## Employment Status Values
+
+Valid values for `employmentStatus`:
+- `EMPLOYED`
+- `UNEMPLOYED`
+- `SEARCHING`
+- `FREELANCE`
+
+## Error Response Format
+
+All error responses follow this format:
+```json
+{
+  "message": "Error description"
+}
+```
+
+Common HTTP status codes:
+- `400` - Bad Request (validation errors, missing fields)
+- `401` - Unauthorized (invalid/missing token, wrong role)
+- `404` - Not Found (resource doesn't exist)
+- `409` - Conflict (e.g., email already exists)
+- `500` - Internal Server Error
 
 ## Next Steps / Ideas
 - Add password reset email flow
