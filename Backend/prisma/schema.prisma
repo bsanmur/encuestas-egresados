@@ -20,6 +20,13 @@ enum EmploymentStatus {
   FREELANCE
 }
 
+enum QuestionType {
+  TEXT
+  MULTIPLE_CHOICE
+  RATING
+  BOOLEAN
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -48,6 +55,7 @@ model AlumniProfile {
   school           School          @relation(fields: [schoolId], references: [id])
   schoolId         String
   isApproved       Boolean         @default(false)
+  surveyAssignments SurveyAssignment[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 }
@@ -67,8 +75,55 @@ model Survey {
   id          String    @id @default(cuid())
   title       String
   description String?
+  program     String?
+  year        Int?
+  isActive    Boolean   @default(true)
   createdBy   User      @relation("SurveyCreatedBy", fields: [createdById], references: [id])
   createdById String
+  questions   Question[]
+  assignments SurveyAssignment[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  survey      Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId    String
+  text        String
+  type        QuestionType
+  options     String[]     @default([])
+  order       Int
+  responses   Response[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Response {
+  id          String        @id @default(cuid())
+  question    Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId  String
+  assignment  SurveyAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId String
+  answerText  String?
+  answerOption String?
+  answerRating Int?
+  answerBoolean Boolean?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SurveyAssignment {
+  id          String        @id @default(cuid())
+  survey      Survey        @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId    String
+  alumni      AlumniProfile @relation(fields: [alumniId], references: [id], onDelete: Cascade)
+  alumniId    String
+  completed   Boolean       @default(false)
+  completedAt DateTime?
+  responses   Response[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([surveyId, alumniId])
 }
