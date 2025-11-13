@@ -1,35 +1,62 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage.jsx';
+import RegisterPage from './pages/RegisterPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import AlumniDashboard from './pages/AlumniDashboard.jsx';
+import SchoolDashboard from './pages/SchoolDashboard.jsx';
+import CreateSurveyPage from './pages/CreateSurveyPage.jsx';
+import Unauthorized from './pages/Unauthorized.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Layout from './components/Layout.jsx';
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
-export default App
+        <Route element={<Layout />}> 
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/alumni"
+            element={
+              <ProtectedRoute roles={["ALUMNI"]}>
+                <AlumniDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/school"
+            element={
+              <ProtectedRoute roles={["SCHOOL"]}>
+                <SchoolDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/surveys/create"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <CreateSurveyPage />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
