@@ -62,7 +62,7 @@ PORT=4000
 ```
 
 ## Install & Run
-```powershell
+```bash
 # Server
 cd server
 npm install
@@ -78,6 +78,51 @@ npm run dev
 ```
 
 Access client at http://localhost:5173 and API at http://localhost:4000/api.
+
+## Initial Setup
+
+### 1. Create Admin User
+
+After setting up the database, create your first administrator account:
+
+```bash
+cd server
+npm run seed:admin
+```
+
+**Default credentials:**
+- Email: `admin@example.com`
+- Password: `admin123`
+
+**Custom credentials:**
+You can set custom credentials in `server/.env`:
+```env
+ADMIN_EMAIL=your-admin@example.com
+ADMIN_PASSWORD=your-secure-password
+```
+
+⚠️ **Important:** Change the default password after first login!
+
+### 2. Seed Schools (Optional)
+
+To populate the database with sample schools:
+
+```bash
+cd server
+npm run seed:schools
+```
+
+This creates 5 sample schools that can be used for alumni registration.
+
+### Available Scripts
+
+**Server scripts:**
+- `npm run dev` - Start development server
+- `npm run start` - Start production server
+- `npm run seed:admin` - Create admin user
+- `npm run seed:schools` - Seed sample schools
+- `npm run prisma:generate` - Generate Prisma client
+- `npm run prisma:migrate` - Run database migrations
 
 ## API Documentation
 
@@ -95,6 +140,7 @@ After successful login or registration, you'll receive a token in the response t
 ## API Endpoints Quick Reference
 
 ### Public Endpoints (No Authentication Required)
+- `GET /api/auth/schools` - Get list of schools (for registration)
 - `POST /api/auth/register` - Register a new alumni user
 - `POST /api/auth/login` - Authenticate and receive JWT token
 - `POST /api/auth/forgot-password` - Request password reset
@@ -124,6 +170,24 @@ After successful login or registration, you'll receive a token in the response t
 ## Core API Endpoints
 
 ### Auth Endpoints (Public)
+
+#### GET /api/auth/schools
+Get list of all schools for registration purposes.
+
+**Response (200):**
+```json
+[
+  {
+    "id": "school-id",
+    "name": "University Name"
+  }
+]
+```
+
+**Error Responses:**
+- `500` - Server error
+
+---
 
 #### POST /api/auth/register
 Register a new alumni user.
@@ -684,6 +748,69 @@ Common HTTP status codes:
 - `409` - Conflict (e.g., email already exists)
 - `500` - Internal Server Error
 
+## Dashboards & Features
+
+### Admin Dashboard (`/admin`)
+- **Global Analytics Tab:**
+  - Total alumni count
+  - Employment rate percentage
+  - Top sectors (majors) by alumni count with percentages
+  - Summary statistics
+- **Manage Alumni Tab:**
+  - View all alumni profiles
+  - Search by name or email
+  - Approve pending alumni
+  - Delete alumni records
+  - View approval status
+- **Manage Schools Tab:**
+  - Create new schools
+  - View all schools
+  - Delete schools
+  - School management
+
+### School Dashboard (`/school`)
+- **School Analytics:**
+  - Employment rate for school's alumni
+  - Top sectors (majors) for the school
+  - Total alumni tracked
+  - Visual statistics cards
+
+### Alumni Dashboard (`/alumni`)
+- **Profile Management:**
+  - View profile status (Approved/Pending)
+  - View employment status with color-coded badges
+  - Update contact information (phone, job title, company)
+  - Update employment status
+  - View personal information (read-only)
+  - Tracking summary
+
+## Troubleshooting
+
+### "Profile not found" Error
+If you see this error when logging in as an alumni:
+1. Make sure you completed the registration process with all required fields
+2. If you have an account but no profile, log out and register again
+3. Contact an administrator to create your profile manually
+
+### "Server error" in Analytics
+If analytics fail to load:
+1. Check that the database is running and connected
+2. Verify migrations are up to date: `npx prisma migrate dev`
+3. Check server logs for specific error messages
+4. The system now handles empty databases gracefully
+
+### Creating Admin Account
+If you need to create an admin account:
+```bash
+cd server
+npm run seed:admin
+```
+Or set custom credentials in `.env`:
+```env
+ADMIN_EMAIL=your-email@example.com
+ADMIN_PASSWORD=your-password
+```
+
 ## Next Steps / Ideas
 - Add password reset email flow
 - Add survey questions & responses models
@@ -691,6 +818,8 @@ Common HTTP status codes:
 - Pagination & filtering for admin tables
 - Validation layer (e.g. zod or joi)
 - Testing (Jest + Supertest)
+- Export analytics to CSV/PDF
+- Email notifications for profile approvals
 
 ## License
 Internal project – no license specified yet.
