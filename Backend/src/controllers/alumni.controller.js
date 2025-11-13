@@ -1,62 +1,169 @@
-import { prisma } from '../lib/prisma.js';
+import { prisma } from "../lib/prisma.js"
 
 export async function getMyProfile(req, res) {
+  const userId = req.user.id
   try {
     const profile = await prisma.alumniProfile.findUnique({
-      where: { userId: req.user.id },
-      include: { school: { select: { id: true, name: true } } }
-    });
-    if (!profile) return res.status(404).json({ message: 'Profile not found. Please complete your registration.' });
-    res.json(profile);
+      where: { userId },
+    })
+    if (!profile) return res.status(404).json({ message: "Profile not found" })
+    res.json(profile)
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: 'Server error' });
+    console.error(e)
+    res.status(500).json({ message: "Server error" })
   }
 }
 
 export async function updateMyProfile(req, res) {
-  const { phone, currentJobTitle, currentCompany, employmentStatus } = req.body;
+  const userId = req.user.id
+  const { phone, currentJobTitle, currentCompany, employmentStatus } = req.body
   try {
-    const updated = await prisma.alumniProfile.update({
-      where: { userId: req.user.id },
-      data: { phone, currentJobTitle, currentCompany, employmentStatus }
-    });
-    res.json(updated);
+    const profile = await prisma.alumniProfile.update({
+      where: { userId },
+      data: {
+        phone,
+        currentJobTitle,
+        currentCompany,
+        employmentStatus,
+      },
+    })
+    res.json(profile)
   } catch (e) {
-    console.error(e);
-    res.status(400).json({ message: 'Update failed' });
+    console.error(e)
+    res.status(400).json({ message: "Update failed" })
   }
 }
 
-// PUT /api/alumni/subscribe (Protected)
-export async function updateSubscription(req, res) {
-  const { isSubscribed } = req.body;
-  if (typeof isSubscribed !== "boolean") {
-    return res
-      .status(400)
-      .json({ message: "isSubscribed must be a boolean value." });
+export async function getMySurveys(req, res) {
+  const userId = req.user.id
+  try {
+    const profile = await prisma.alumniProfile.findUnique({
+      where: { userId },
+    })
+    if (!profile) return res.status(404).json({ message: "Profile not found" })
+
+    const assignments = await prisma.surveyAssignment.findMany({
+      where: { alumniId: profile.id },
+      include: {
+        survey: {
+          include: {
+            _count: { select: { questions: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+
+    res.json(assignments)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ message: "Server error" })
+  }
+}
+
+export async function getSurveyForAlumni(req, res) {
+  const userId = req.user.id
+  const { surveyId } = req.params
+  try {
+    const profile = await prisma.alumniProfile.findUnique({
+      where: { userId },
+    })
+    if (!profile) return res.status(404).json({ message: "Profile not found" })
+
+    const assignment = await prisma.surveyAssignment.findUnique({
+      where: {
+        surveyId_alumniId: {
+          surveyId,
+          alumniId: profile.id,
+        },
+      },
+      include: {
+        survey: {
+          include: {
+            questions: { orderBy: { order: "asc" } },
+          },
+        },
+      },
+    })
+
+    if (!assignment) {
+      return res.status(404).json({ message: "Survey not assigned to you" })
+    }
+
+    res.json(assignment)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ message: "Server error" })
+  }
+}
+
+export async function submitSurveyResponse(req, res) {
+  const userId = req.user.id
+  const { surveyId } = req.params
+  const { responses } = req.body
+
+  if (!responses || !Array.isArray(responses)) {
+    return res.status(400).json({ message: "responses array required" })
   }
 
   try {
-    // Attempt update by id; adjust parsing if your Prisma model uses Int ids
-    const id = req.userId;
-    const where = { id };
+    const profile = await prisma.alumniProfile.findUnique({
+      where: { userId },
+    })
+    if (!profile) return res.status(404).json({ message: "Profile not found" })
 
-    const alumnus = await prisma.alumnus.update({
-      where,
-      data: { isSubscribed },
-      select: { isSubscribed: true },
-    });
+    const assignment = await prisma.surveyAssignment.findUnique({
+      where: {
+        surveyId_alumniId: {
+          surveyId,
+          alumniId: profile.id,
+        },
+      },
+    })
+
+    if (!assignment) {
+      return res.status(404).json({ message: "Survey not assigned to you" })
+    }
+
+    if (assignment.completed) {
+      return res.status(400).json({ message: "Survey already completed" })
+    }
+
+    // Delete any existing responses for this assignment
+    await prisma.response.deleteMany({
+      where: { assignmentId: assignment.id },
+    })
+
+    // Create new responses
+    const responseData = responses.map((r) => ({
+      questionId: r.questionId,
+      assignmentId: assignment.id,
+      answerText: r.answerText || null,
+      answerOption: r.answerOption || null,
+      answerRating: r.answerRating ? Number(r.answerRating) : null,
+      answerBoolean: r.answerBoolean !== undefined ? r.answerBoolean : null,
+    }))
+
+    await prisma.response.createMany({
+      data: responseData,
+    })
+
+    // Mark assignment as completed
+    const updatedAssignment = await prisma.surveyAssignment.update({
+      where: { id: assignment.id },
+      data: {
+        completed: true,
+        completedAt: new Date(),
+      },
+    })
 
     res.json({
-      message: `Subscription status updated to: ${
-        isSubscribed ? "Subscribed" : "Unsubscribed"
-      }`,
-      isSubscribed: alumnus.isSubscribed,
-    });
-  } catch (error) {
-    console.error(error);
-    // If update fails due to id type mismatch, log and return 404 for now
-    res.status(500).json({ message: "Error updating subscription status." });
+      success: true,
+      message: "Survey submitted successfully",
+      assignment: updatedAssignment,
+    })
+  } catch (e) {
+    console.error(e)
+    res.status(400).json({ message: "Submit failed" })
   }
 }

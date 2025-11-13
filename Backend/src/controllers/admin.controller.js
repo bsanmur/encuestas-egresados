@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 
+/* ------------------- ALUMNI ------------------- */
 export async function listAlumni(req, res) {
   try {
     const alumni = await prisma.alumniProfile.findMany({
@@ -58,7 +59,6 @@ export async function deleteAlumni(req, res) {
   const { id } = req.params;
   try {
     const profile = await prisma.alumniProfile.delete({ where: { id } });
-    // optionally also delete user? here we keep user record
     res.json({ success: true, deletedId: profile.id });
   } catch (e) {
     console.error(e);
@@ -80,6 +80,7 @@ export async function approveAlumni(req, res) {
   }
 }
 
+/* ------------------- SCHOOLS ------------------- */
 export async function listSchools(req, res) {
   try {
     const schools = await prisma.school.findMany({ orderBy: { name: "asc" } });
@@ -150,6 +151,7 @@ export async function assignUserToSchool(req, res) {
   }
 }
 
+/* ------------------- ANALYTICS ------------------- */
 export async function globalAnalytics(req, res) {
   try {
     const total = await prisma.alumniProfile.count();
@@ -158,50 +160,28 @@ export async function globalAnalytics(req, res) {
     });
     const employmentRate = total > 0 ? Math.round((employed / total) * 100) : 0;
 
-    // Top programs as a proxy for sectors
     let topSectors = [];
     if (total > 0) {
-      try {
-        const programs = await prisma.alumniProfile.groupBy({
-          by: ["program"],
-          _count: { _all: true },
-          orderBy: { _count: { _all: "desc" } },
-          take: 5,
-        });
-        topSectors = programs.map((m) => ({
-          name: m.program || "Unknown",
-          count: m._count._all,
-        }));
-      } catch (groupByError) {
-        console.error("Error in groupBy query:", groupByError);
-        // If groupBy fails, try alternative approach
-        const allProfiles = await prisma.alumniProfile.findMany({
-          select: { program: true },
-        });
-        const programCounts = {};
-        allProfiles.forEach((profile) => {
-          const program = profile.program || "Unknown";
-          programCounts[program] = (programCounts[program] || 0) + 1;
-        });
-        topSectors = Object.entries(programCounts)
-          .map(([name, count]) => ({ name, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
-      }
+      const programs = await prisma.alumniProfile.groupBy({
+        by: ["program"],
+        _count: { _all: true },
+        orderBy: { _count: { _all: "desc" } },
+        take: 5,
+      });
+      topSectors = programs.map((m) => ({
+        name: m.program || "Unknown",
+        count: m._count._all,
+      }));
     }
 
     res.json({ totalAlumni: total, employmentRate, topSectors });
   } catch (e) {
     console.error("Global analytics error:", e);
-    res
-      .status(500)
-      .json({
-        message: "Server error",
-        error: process.env.NODE_ENV === "development" ? e.message : undefined,
-      });
+    res.status(500).json({ message: "Server error" });
   }
 }
 
+/* ------------------- SURVEYS ------------------- */
 export async function createSurvey(req, res) {
   const adminUserId = req.user.id;
   const { title, description } = req.body;
@@ -214,5 +194,72 @@ export async function createSurvey(req, res) {
   } catch (e) {
     console.error(e);
     res.status(400).json({ message: "Create failed" });
+  }
+}
+
+export async function listSurveys(req, res) {
+  try {
+    const surveys = await prisma.survey.findMany({
+      include: { createdBy: { select: { id: true, email: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(surveys);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getSurvey(req, res) {
+  const { id } = req.params;
+  try {
+    const survey = await prisma.survey.findUnique({
+      where: { id },
+      include: { createdBy: { select: { id: true, email: true } } },
+    });
+    if (!survey) return res.status(404).json({ message: "Survey not found" });
+    res.json(survey);
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ message: "Get failed" });
+  }
+}
+
+export async function updateSurvey(req, res) {
+  const { id } = req.params;
+  const { title, description } = req.body;
+  try {
+    const survey = await prisma.survey.update({
+      where: { id },
+      data: { title, description },
+    });
+    res.json(survey);
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ message: "Update failed" });
+  }
+}
+
+export async function deleteSurvey(req, res) {
+  const { id } = req.params;
+  try {
+    const survey = await prisma.survey.delete({ where: { id } });
+    res.json({ success: true, deletedId: survey.id });
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ message: "Delete failed" });
+  }
+}
+
+export async function getSurveyAnalytics(req, res) {
+  const { id } = req.params;
+  try {
+    const responses = await prisma.surveyResponse.count({
+      where: { surveyId: id },
+    });
+    res.json({ totalResponses: responses });
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ message: "Analytics failed" });
   }
 }
