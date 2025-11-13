@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import alumniRoutes from './routes/alumni.routes.js';
 import schoolRoutes from './routes/school.routes.js';
+import mailingRoutes from './routes/mailing.routes.js';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/alumni', alumniRoutes);
 app.use('/api/school', schoolRoutes);
+app.use('/api/admin/mailing', mailingRoutes);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {

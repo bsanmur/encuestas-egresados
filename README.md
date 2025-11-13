@@ -3,18 +3,22 @@
 This branch scaffolds the initial "Alumni Tracking App" with a `server/` (Node.js + Express + Prisma + PostgreSQL) and `client/` (React + Vite + Tailwind) implementation.
 
 ## Stack
+
 Server:
+
 - Node.js / Express
 - Prisma ORM (PostgreSQL)
 - JWT Auth (Roles: ADMIN, ALUMNI, SCHOOL)
 
 Client:
+
 - React 18 (Vite)
 - Tailwind CSS
 - React Router v6
 - Axios API layer
 
 ## Folder Structure
+
 ```
 server/
 	prisma/schema.prisma
@@ -55,6 +59,7 @@ Copy `.env.example` to `.env` in `server/` and set `DATABASE_URL` & `JWT_SECRET`
 Copy `client/.env.example` to `client/.env` if you need to override API URL.
 
 **Example server `.env`:**
+
 ```
 DATABASE_URL=postgresql://postgres:passwd1@localhost:5432/students
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -62,6 +67,7 @@ PORT=4000
 ```
 
 ## Install & Run
+
 ```bash
 # Server
 cd server
@@ -91,11 +97,13 @@ npm run seed:admin
 ```
 
 **Default credentials:**
+
 - Email: `admin@example.com`
 - Password: `admin123`
 
 **Custom credentials:**
 You can set custom credentials in `server/.env`:
+
 ```env
 ADMIN_EMAIL=your-admin@example.com
 ADMIN_PASSWORD=your-secure-password
@@ -117,6 +125,7 @@ This creates 5 sample schools that can be used for alumni registration.
 ### Available Scripts
 
 **Server scripts:**
+
 - `npm run dev` - Start development server
 - `npm run start` - Start production server
 - `npm run seed:admin` - Create admin user
@@ -129,6 +138,7 @@ This creates 5 sample schools that can be used for alumni registration.
 ### Authentication
 
 All protected endpoints require a JWT token in the Authorization header:
+
 ```
 Authorization: Bearer <your-jwt-token>
 ```
@@ -140,12 +150,14 @@ After successful login or registration, you'll receive a token in the response t
 ## API Endpoints Quick Reference
 
 ### Public Endpoints (No Authentication Required)
+
 - `GET /api/auth/schools` - Get list of schools (for registration)
 - `POST /api/auth/register` - Register a new alumni user
 - `POST /api/auth/login` - Authenticate and receive JWT token
 - `POST /api/auth/forgot-password` - Request password reset
 
 ### Admin Endpoints (Requires ADMIN role)
+
 - `GET /api/admin/alumni` - Get all alumni profiles
 - `PUT /api/admin/alumni/:id` - Update an alumni profile
 - `DELETE /api/admin/alumni/:id` - Delete an alumni profile
@@ -159,10 +171,12 @@ After successful login or registration, you'll receive a token in the response t
 - `POST /api/admin/surveys` - Create a new survey
 
 ### Alumni Endpoints (Requires ALUMNI role)
+
 - `GET /api/alumni/profile/me` - Get own profile
 - `PUT /api/alumni/profile/me` - Update own profile
 
 ### School Endpoints (Requires SCHOOL role)
+
 - `GET /api/school/dashboard/analytics` - Get school analytics
 
 ---
@@ -172,9 +186,11 @@ After successful login or registration, you'll receive a token in the response t
 ### Auth Endpoints (Public)
 
 #### GET /api/auth/schools
+
 Get list of all schools for registration purposes.
 
 **Response (200):**
+
 ```json
 [
   {
@@ -185,14 +201,17 @@ Get list of all schools for registration purposes.
 ```
 
 **Error Responses:**
+
 - `500` - Server error
 
 ---
 
 #### POST /api/auth/register
+
 Register a new alumni user.
 
 **Request Body:**
+
 ```json
 {
   "email": "alumni@example.com",
@@ -200,7 +219,7 @@ Register a new alumni user.
   "fullName": "John Doe",
   "phone": "+1234567890",
   "graduationYear": 2020,
-  "major": "Computer Science",
+  "program": "Computer Science",
   "studentId": "STU123456",
   "currentJobTitle": "Software Engineer",
   "currentCompany": "Tech Corp",
@@ -209,9 +228,10 @@ Register a new alumni user.
 }
 ```
 
-**Required Fields:** `email`, `password`, `fullName`, `graduationYear`, `major`, `schoolId`, `employmentStatus`
+**Required Fields:** `email`, `password`, `fullName`, `graduationYear`, `program`, `schoolId`, `employmentStatus`
 
 **Response (201):**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -224,6 +244,7 @@ Register a new alumni user.
 ```
 
 **Error Responses:**
+
 - `400` - Missing required fields
 - `409` - Email already in use
 - `500` - Server error
@@ -231,9 +252,11 @@ Register a new alumni user.
 ---
 
 #### POST /api/auth/login
+
 Authenticate and receive a JWT token.
 
 **Request Body:**
+
 ```json
 {
   "email": "alumni@example.com",
@@ -242,6 +265,7 @@ Authenticate and receive a JWT token.
 ```
 
 **Response (200):**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -254,15 +278,18 @@ Authenticate and receive a JWT token.
 ```
 
 **Error Responses:**
+
 - `401` - Invalid credentials
 - `500` - Server error
 
 ---
 
 #### POST /api/auth/forgot-password
+
 Request password reset (placeholder implementation).
 
 **Request Body:**
+
 ```json
 {
   "email": "alumni@example.com"
@@ -270,6 +297,7 @@ Request password reset (placeholder implementation).
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "If the email exists, password reset instructions will be sent."
@@ -281,14 +309,17 @@ Request password reset (placeholder implementation).
 ### Admin Endpoints (Requires ADMIN role)
 
 #### GET /api/admin/alumni
+
 Get list of all alumni profiles.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -296,7 +327,7 @@ Authorization: Bearer <admin-jwt-token>
     "fullName": "John Doe",
     "phone": "+1234567890",
     "graduationYear": 2020,
-    "major": "Computer Science",
+    "program": "Computer Science",
     "studentId": "STU123456",
     "currentJobTitle": "Software Engineer",
     "currentCompany": "Tech Corp",
@@ -321,20 +352,23 @@ Authorization: Bearer <admin-jwt-token>
 ---
 
 #### PUT /api/admin/alumni/:id
+
 Update an alumni profile.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Request Body (all fields optional):**
+
 ```json
 {
   "fullName": "John Updated",
   "phone": "+9876543210",
   "graduationYear": 2021,
-  "major": "Data Science",
+  "program": "Data Science",
   "studentId": "STU789012",
   "currentJobTitle": "Senior Engineer",
   "currentCompany": "New Corp",
@@ -345,6 +379,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "profile-id",
@@ -354,6 +389,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - Update failed
 - `401` - Unauthorized (not admin)
 - `500` - Server error
@@ -361,14 +397,17 @@ Authorization: Bearer <admin-jwt-token>
 ---
 
 #### DELETE /api/admin/alumni/:id
+
 Delete an alumni profile.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -377,20 +416,24 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - Delete failed
 - `401` - Unauthorized
 
 ---
 
 #### PUT /api/admin/alumni/approve/:id
+
 Approve an alumni profile.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "profile-id",
@@ -400,6 +443,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - Approve failed
 - `401` - Unauthorized (not admin)
 - `500` - Server error
@@ -407,14 +451,17 @@ Authorization: Bearer <admin-jwt-token>
 ---
 
 #### GET /api/admin/schools
+
 Get list of all schools.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 [
   {
@@ -429,20 +476,24 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `401` - Unauthorized (not admin)
 - `500` - Server error
 
 ---
 
 #### POST /api/admin/schools
+
 Create a new school.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "University Name",
@@ -452,6 +503,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "school-id",
@@ -464,6 +516,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - Create failed (e.g., duplicate school name)
 - `401` - Unauthorized (not admin)
 - `500` - Server error
@@ -471,14 +524,17 @@ Authorization: Bearer <admin-jwt-token>
 ---
 
 #### PUT /api/admin/schools/:id
+
 Update a school.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "Updated University Name",
@@ -488,6 +544,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "school-id",
@@ -497,6 +554,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - Update failed
 - `401` - Unauthorized (not admin)
 - `500` - Server error
@@ -504,14 +562,17 @@ Authorization: Bearer <admin-jwt-token>
 ---
 
 #### DELETE /api/admin/schools/:id
+
 Delete a school.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -520,6 +581,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - Delete failed
 - `401` - Unauthorized (not admin)
 - `500` - Server error
@@ -527,14 +589,17 @@ Authorization: Bearer <admin-jwt-token>
 ---
 
 #### POST /api/admin/schools/assign-user
+
 Assign a user to a school and change their role to SCHOOL.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "userId": "user-id",
@@ -543,6 +608,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "user-id",
@@ -553,6 +619,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - userId and schoolId required, or assign failed
 - `401` - Unauthorized (not admin)
 - `500` - Server error
@@ -560,14 +627,17 @@ Authorization: Bearer <admin-jwt-token>
 ---
 
 #### GET /api/admin/analytics/global
+
 Get global analytics for all alumni.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "totalAlumni": 150,
@@ -581,20 +651,24 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `401` - Unauthorized (not admin)
 - `500` - Server error
 
 ---
 
 #### POST /api/admin/surveys
+
 Create a new survey.
 
 **Headers:**
+
 ```
 Authorization: Bearer <admin-jwt-token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "title": "2024 Alumni Survey",
@@ -605,6 +679,7 @@ Authorization: Bearer <admin-jwt-token>
 **Required Fields:** `title`
 
 **Response (201):**
+
 ```json
 {
   "id": "survey-id",
@@ -617,6 +692,7 @@ Authorization: Bearer <admin-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - title required, or create failed
 - `401` - Unauthorized (not admin)
 - `500` - Server error
@@ -626,14 +702,17 @@ Authorization: Bearer <admin-jwt-token>
 ### Alumni Endpoints (Requires ALUMNI role)
 
 #### GET /api/alumni/profile/me
+
 Get the authenticated alumni's own profile.
 
 **Headers:**
+
 ```
 Authorization: Bearer <alumni-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "profile-id",
@@ -641,7 +720,7 @@ Authorization: Bearer <alumni-jwt-token>
   "fullName": "John Doe",
   "phone": "+1234567890",
   "graduationYear": 2020,
-  "major": "Computer Science",
+  "program": "Computer Science",
   "studentId": "STU123456",
   "currentJobTitle": "Software Engineer",
   "currentCompany": "Tech Corp",
@@ -654,20 +733,24 @@ Authorization: Bearer <alumni-jwt-token>
 ```
 
 **Error Responses:**
+
 - `404` - Profile not found
 - `401` - Unauthorized
 
 ---
 
 #### PUT /api/alumni/profile/me
+
 Update the authenticated alumni's own profile (limited fields).
 
 **Headers:**
+
 ```
 Authorization: Bearer <alumni-jwt-token>
 ```
 
 **Request Body (all fields optional):**
+
 ```json
 {
   "phone": "+9876543210",
@@ -680,6 +763,7 @@ Authorization: Bearer <alumni-jwt-token>
 **Note:** Alumni can only update: `phone`, `currentJobTitle`, `currentCompany`, `employmentStatus`
 
 **Response (200):**
+
 ```json
 {
   "id": "profile-id",
@@ -690,6 +774,7 @@ Authorization: Bearer <alumni-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - Update failed
 - `401` - Unauthorized
 
@@ -698,14 +783,17 @@ Authorization: Bearer <alumni-jwt-token>
 ### School Endpoints (Requires SCHOOL role)
 
 #### GET /api/school/dashboard/analytics
+
 Get analytics for the school associated with the authenticated user.
 
 **Headers:**
+
 ```
 Authorization: Bearer <school-jwt-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "employmentRate": 90,
@@ -718,6 +806,7 @@ Authorization: Bearer <school-jwt-token>
 ```
 
 **Error Responses:**
+
 - `400` - User is not linked to a school
 - `401` - Unauthorized
 - `500` - Server error
@@ -727,6 +816,7 @@ Authorization: Bearer <school-jwt-token>
 ## Employment Status Values
 
 Valid values for `employmentStatus`:
+
 - `EMPLOYED`
 - `UNEMPLOYED`
 - `SEARCHING`
@@ -735,6 +825,7 @@ Valid values for `employmentStatus`:
 ## Error Response Format
 
 All error responses follow this format:
+
 ```json
 {
   "message": "Error description"
@@ -742,6 +833,7 @@ All error responses follow this format:
 ```
 
 Common HTTP status codes:
+
 - `400` - Bad Request (validation errors, missing fields)
 - `401` - Unauthorized (invalid/missing token, wrong role)
 - `404` - Not Found (resource doesn't exist)
@@ -751,10 +843,11 @@ Common HTTP status codes:
 ## Dashboards & Features
 
 ### Admin Dashboard (`/admin`)
+
 - **Global Analytics Tab:**
   - Total alumni count
   - Employment rate percentage
-  - Top sectors (majors) by alumni count with percentages
+  - Top sectors (programs) by alumni count with percentages
   - Summary statistics
 - **Manage Alumni Tab:**
   - View all alumni profiles
@@ -769,13 +862,15 @@ Common HTTP status codes:
   - School management
 
 ### School Dashboard (`/school`)
+
 - **School Analytics:**
   - Employment rate for school's alumni
-  - Top sectors (majors) for the school
+  - Top sectors (programs) for the school
   - Total alumni tracked
   - Visual statistics cards
 
 ### Alumni Dashboard (`/alumni`)
+
 - **Profile Management:**
   - View profile status (Approved/Pending)
   - View employment status with color-coded badges
@@ -787,31 +882,40 @@ Common HTTP status codes:
 ## Troubleshooting
 
 ### "Profile not found" Error
+
 If you see this error when logging in as an alumni:
+
 1. Make sure you completed the registration process with all required fields
 2. If you have an account but no profile, log out and register again
 3. Contact an administrator to create your profile manually
 
 ### "Server error" in Analytics
+
 If analytics fail to load:
+
 1. Check that the database is running and connected
 2. Verify migrations are up to date: `npx prisma migrate dev`
 3. Check server logs for specific error messages
 4. The system now handles empty databases gracefully
 
 ### Creating Admin Account
+
 If you need to create an admin account:
+
 ```bash
 cd server
 npm run seed:admin
 ```
+
 Or set custom credentials in `.env`:
+
 ```env
 ADMIN_EMAIL=your-email@example.com
 ADMIN_PASSWORD=your-password
 ```
 
 ## Next Steps / Ideas
+
 - Add password reset email flow
 - Add survey questions & responses models
 - Improve analytics (salary capture, more KPIs)
@@ -822,4 +926,5 @@ ADMIN_PASSWORD=your-password
 - Email notifications for profile approvals
 
 ## License
+
 Internal project – no license specified yet.

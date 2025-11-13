@@ -24,7 +24,7 @@ CREATE TABLE "AlumniProfile" (
     "fullName" TEXT NOT NULL,
     "phone" TEXT,
     "graduationYear" INTEGER NOT NULL,
-    "major" TEXT NOT NULL,
+    "program" TEXT NOT NULL,
     "studentId" TEXT,
     "currentJobTitle" TEXT,
     "currentCompany" TEXT,

@@ -1,10 +1,11 @@
-import prisma from "../lib/prisma.js";
-import transporter from "../lib/mailer.js";
+import { prisma } from "../lib/prisma.js";
+import { transporter } from "../lib/mailer.js";
 
+// GET /api/mailing/subscribers (Admin Protected)
 export async function getSubscribers(req, res) {
   // Query parameters for segmentation: ?program=Informatica&year=2010
   const { program, year } = req.query;
-  const where = { isSubscribed: true };
+  // const where = { isSubscribed: true };
 
   if (program) where.program = program;
   if (year) {
@@ -38,35 +39,60 @@ export async function getSubscribers(req, res) {
 
 // POST /api/mailing/send (Admin Protected)
 export async function sendNewsletter(req, res) {
-  const { subject, content, program, year } = req.body;
-  if (!subject || !content) {
-    return res
-      .status(400)
-      .json({
-        message: "Subject and content are required for the newsletter.",
-      });
-  }
+  const { program, year } = req.body;
 
-  const where = { isSubscribed: true };
+  const surveyLink = "http://localhost:5173/alumni";
+  const subject = "[UdeC] Survey for graduates";
+  const content = `
+    <p>Dear Alumni,</p>
+    <p>We invite you to participate in our graduate survey to help us improve our programs and services.</p>
+    <p>Please click the following link to access the survey: <a href="${surveyLink}">${surveyLink}</a></p>
+  `;
+
+  const where = { isApproved: true };
+  
   if (program) where.program = program;
+  
   if (year) {
     const parsed = parseInt(year, 10);
     if (!Number.isNaN(parsed)) where.graduationYear = parsed;
   }
 
+  console.log("Preparing to send newsletter with filter:", where);
+
   try {
-    const subscribers = await prisma.alumnus.findMany({
+    const subscribers = await prisma.alumniProfile.findMany({
       where,
-      select: { email: true, firstName: true },
+      select: {
+        fullName: true,
+        user: {
+          select: {
+            email: true
+          }
+        }
+      }
     });
 
+    console.log(`Found ${subscribers.length} subscribers matching criteria.`);
+
     if (!subscribers || subscribers.length === 0) {
-      return res
-        .status(200)
-        .json({ message: "No subscribed alumni found matching the criteria." });
+      return res.status(200).json({ 
+        message: "No subscribed alumni found matching the criteria." 
+      });
     }
 
-    const subscriberEmails = subscribers.map((s) => s.email).join(",");
+    console.log("Preparing to send emails...");
+
+    const subscriberEmails = subscribers
+      .map((s) => s.user.email)
+      .filter(Boolean) // Filtrar emails nulos o undefined
+      .join(",");
+
+    if (!subscriberEmails) {
+      return res.status(400).json({
+        message: "No valid email addresses found for the selected alumni."
+      });
+    }
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || '"UdeC Alumni" <alumni@udec.cl>',
@@ -91,41 +117,8 @@ export async function sendNewsletter(req, res) {
   } catch (error) {
     console.error("Error sending email:", error);
     res.status(500).json({
-      message:
-        "Error sending newsletter. Check server logs and ESP configuration.",
+      message: "Error sending newsletter. Check server logs and ESP configuration.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  }
-}
-
-// PUT /api/alumni/subscribe (Protected)
-export async function updateSubscription(req, res) {
-  const { isSubscribed } = req.body;
-  if (typeof isSubscribed !== "boolean") {
-    return res
-      .status(400)
-      .json({ message: "isSubscribed must be a boolean value." });
-  }
-
-  try {
-    // Attempt update by id; adjust parsing if your Prisma model uses Int ids
-    const id = req.userId;
-    const where = { id };
-
-    const alumnus = await prisma.alumnus.update({
-      where,
-      data: { isSubscribed },
-      select: { isSubscribed: true },
-    });
-
-    res.json({
-      message: `Subscription status updated to: ${
-        isSubscribed ? "Subscribed" : "Unsubscribed"
-      }`,
-      isSubscribed: alumnus.isSubscribed,
-    });
-  } catch (error) {
-    console.error(error);
-    // If update fails due to id type mismatch, log and return 404 for now
-    res.status(500).json({ message: "Error updating subscription status." });
   }
 }

@@ -1,41 +1,56 @@
-import { prisma } from '../lib/prisma.js';
+import { prisma } from "../lib/prisma.js";
 
 export async function listAlumni(req, res) {
   try {
     const alumni = await prisma.alumniProfile.findMany({
-      include: { user: { select: { id: true, email: true, role: true } }, school: { select: { id: true, name: true } } },
-      orderBy: { createdAt: 'desc' }
+      include: {
+        user: { select: { id: true, email: true, role: true } },
+        school: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
     });
     res.json(alumni);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 }
 
 export async function updateAlumni(req, res) {
   const { id } = req.params;
-  const { fullName, phone, graduationYear, major, studentId, currentJobTitle, currentCompany, employmentStatus, schoolId, isApproved } = req.body;
+  const {
+    fullName,
+    phone,
+    graduationYear,
+    program,
+    studentId,
+    currentJobTitle,
+    currentCompany,
+    employmentStatus,
+    schoolId,
+    isApproved,
+  } = req.body;
   try {
     const updated = await prisma.alumniProfile.update({
       where: { id },
       data: {
         fullName,
         phone,
-        graduationYear: graduationYear !== undefined ? Number(graduationYear) : undefined,
-        major,
+        graduationYear:
+          graduationYear !== undefined ? Number(graduationYear) : undefined,
+        program,
         studentId,
         currentJobTitle,
         currentCompany,
         employmentStatus,
         schoolId,
-        isApproved
-      }
+        isApproved,
+      },
     });
     res.json(updated);
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Update failed' });
+    res.status(400).json({ message: "Update failed" });
   }
 }
 
@@ -47,39 +62,44 @@ export async function deleteAlumni(req, res) {
     res.json({ success: true, deletedId: profile.id });
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Delete failed' });
+    res.status(400).json({ message: "Delete failed" });
   }
 }
 
 export async function approveAlumni(req, res) {
   const { id } = req.params;
   try {
-    const updated = await prisma.alumniProfile.update({ where: { id }, data: { isApproved: true } });
+    const updated = await prisma.alumniProfile.update({
+      where: { id },
+      data: { isApproved: true },
+    });
     res.json(updated);
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Approve failed' });
+    res.status(400).json({ message: "Approve failed" });
   }
 }
 
 export async function listSchools(req, res) {
   try {
-    const schools = await prisma.school.findMany({ orderBy: { name: 'asc' } });
+    const schools = await prisma.school.findMany({ orderBy: { name: "asc" } });
     res.json(schools);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 }
 
 export async function createSchool(req, res) {
   const { name, description, contactPerson } = req.body;
   try {
-    const school = await prisma.school.create({ data: { name, description, contactPerson } });
+    const school = await prisma.school.create({
+      data: { name, description, contactPerson },
+    });
     res.status(201).json(school);
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Create failed' });
+    res.status(400).json({ message: "Create failed" });
   }
 }
 
@@ -87,11 +107,14 @@ export async function updateSchool(req, res) {
   const { id } = req.params;
   const { name, description, contactPerson } = req.body;
   try {
-    const school = await prisma.school.update({ where: { id }, data: { name, description, contactPerson } });
+    const school = await prisma.school.update({
+      where: { id },
+      data: { name, description, contactPerson },
+    });
     res.json(school);
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Update failed' });
+    res.status(400).json({ message: "Update failed" });
   }
 }
 
@@ -102,51 +125,65 @@ export async function deleteSchool(req, res) {
     res.json({ success: true, deletedId: school.id });
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Delete failed' });
+    res.status(400).json({ message: "Delete failed" });
   }
 }
 
 export async function assignUserToSchool(req, res) {
   const { userId, schoolId } = req.body;
-  if (!userId || !schoolId) return res.status(400).json({ message: 'userId and schoolId required' });
+  if (!userId || !schoolId)
+    return res.status(400).json({ message: "userId and schoolId required" });
   try {
-    const user = await prisma.user.update({ where: { id: userId }, data: { role: 'SCHOOL', schoolId } });
-    res.json({ id: user.id, email: user.email, role: user.role, schoolId: user.schoolId });
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { role: "SCHOOL", schoolId },
+    });
+    res.json({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      schoolId: user.schoolId,
+    });
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Assign failed' });
+    res.status(400).json({ message: "Assign failed" });
   }
 }
 
 export async function globalAnalytics(req, res) {
   try {
     const total = await prisma.alumniProfile.count();
-    const employed = await prisma.alumniProfile.count({ where: { employmentStatus: 'EMPLOYED' } });
+    const employed = await prisma.alumniProfile.count({
+      where: { employmentStatus: "EMPLOYED" },
+    });
     const employmentRate = total > 0 ? Math.round((employed / total) * 100) : 0;
 
-    // Top majors as a proxy for sectors
+    // Top programs as a proxy for sectors
     let topSectors = [];
     if (total > 0) {
       try {
-        const majors = await prisma.alumniProfile.groupBy({
-          by: ['major'],
+        const programs = await prisma.alumniProfile.groupBy({
+          by: ["program"],
           _count: { _all: true },
-          orderBy: { _count: { _all: 'desc' } },
-          take: 5
+          orderBy: { _count: { _all: "desc" } },
+          take: 5,
         });
-        topSectors = majors.map(m => ({ name: m.major || 'Unknown', count: m._count._all }));
+        topSectors = programs.map((m) => ({
+          name: m.program || "Unknown",
+          count: m._count._all,
+        }));
       } catch (groupByError) {
-        console.error('Error in groupBy query:', groupByError);
+        console.error("Error in groupBy query:", groupByError);
         // If groupBy fails, try alternative approach
         const allProfiles = await prisma.alumniProfile.findMany({
-          select: { major: true }
+          select: { program: true },
         });
-        const majorCounts = {};
-        allProfiles.forEach(profile => {
-          const major = profile.major || 'Unknown';
-          majorCounts[major] = (majorCounts[major] || 0) + 1;
+        const programCounts = {};
+        allProfiles.forEach((profile) => {
+          const program = profile.program || "Unknown";
+          programCounts[program] = (programCounts[program] || 0) + 1;
         });
-        topSectors = Object.entries(majorCounts)
+        topSectors = Object.entries(programCounts)
           .map(([name, count]) => ({ name, count }))
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
@@ -155,20 +192,27 @@ export async function globalAnalytics(req, res) {
 
     res.json({ totalAlumni: total, employmentRate, topSectors });
   } catch (e) {
-    console.error('Global analytics error:', e);
-    res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? e.message : undefined });
+    console.error("Global analytics error:", e);
+    res
+      .status(500)
+      .json({
+        message: "Server error",
+        error: process.env.NODE_ENV === "development" ? e.message : undefined,
+      });
   }
 }
 
 export async function createSurvey(req, res) {
   const adminUserId = req.user.id;
   const { title, description } = req.body;
-  if (!title) return res.status(400).json({ message: 'title required' });
+  if (!title) return res.status(400).json({ message: "title required" });
   try {
-    const survey = await prisma.survey.create({ data: { title, description, createdById: adminUserId } });
+    const survey = await prisma.survey.create({
+      data: { title, description, createdById: adminUserId },
+    });
     res.status(201).json(survey);
   } catch (e) {
     console.error(e);
-    res.status(400).json({ message: 'Create failed' });
+    res.status(400).json({ message: "Create failed" });
   }
 }

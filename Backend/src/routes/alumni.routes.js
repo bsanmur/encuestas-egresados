@@ -8,5 +8,6 @@ router.use(authMiddleware, requireRole('ALUMNI'));
 
 router.get('/profile/me', getMyProfile);
 router.put('/profile/me', updateMyProfile);
+// router.put('/subscribe', updateSubscription);
 
 export default router;

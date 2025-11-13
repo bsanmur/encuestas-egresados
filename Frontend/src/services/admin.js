@@ -14,4 +14,6 @@ export const adminService = {
 
   globalAnalytics: () => api.get('/admin/analytics/global').then(r => r.data),
   createSurvey: (data) => api.post('/admin/surveys', data).then(r => r.data),
+
+  sendNewsletter: (data) => api.post('/admin/mailing/send', data).then(r => r.data),
 };
