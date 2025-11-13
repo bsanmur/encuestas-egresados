@@ -2,8 +2,11 @@ import { prisma } from '../lib/prisma.js';
 
 export async function getMyProfile(req, res) {
   try {
-    const profile = await prisma.alumniProfile.findUnique({ where: { userId: req.user.id } });
-    if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    const profile = await prisma.alumniProfile.findUnique({
+      where: { userId: req.user.id },
+      include: { school: { select: { id: true, name: true } } }
+    });
+    if (!profile) return res.status(404).json({ message: 'Profile not found. Please complete your registration.' });
     res.json(profile);
   } catch (e) {
     console.error(e);

@@ -122,16 +122,41 @@ export async function globalAnalytics(req, res) {
   try {
     const total = await prisma.alumniProfile.count();
     const employed = await prisma.alumniProfile.count({ where: { employmentStatus: 'EMPLOYED' } });
-    const employmentRate = total ? Math.round((employed / total) * 100) : 0;
+    const employmentRate = total > 0 ? Math.round((employed / total) * 100) : 0;
 
     // Top majors as a proxy for sectors
-    const majors = await prisma.alumniProfile.groupBy({ by: ['major'], _count: { _all: true }, orderBy: { _count: { _all: 'desc' } }, take: 5 });
-    const topSectors = majors.map(m => ({ name: m.major, count: m._count._all }));
+    let topSectors = [];
+    if (total > 0) {
+      try {
+        const majors = await prisma.alumniProfile.groupBy({
+          by: ['major'],
+          _count: { _all: true },
+          orderBy: { _count: { _all: 'desc' } },
+          take: 5
+        });
+        topSectors = majors.map(m => ({ name: m.major || 'Unknown', count: m._count._all }));
+      } catch (groupByError) {
+        console.error('Error in groupBy query:', groupByError);
+        // If groupBy fails, try alternative approach
+        const allProfiles = await prisma.alumniProfile.findMany({
+          select: { major: true }
+        });
+        const majorCounts = {};
+        allProfiles.forEach(profile => {
+          const major = profile.major || 'Unknown';
+          majorCounts[major] = (majorCounts[major] || 0) + 1;
+        });
+        topSectors = Object.entries(majorCounts)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+      }
+    }
 
     res.json({ totalAlumni: total, employmentRate, topSectors });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Global analytics error:', e);
+    res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? e.message : undefined });
   }
 }
 

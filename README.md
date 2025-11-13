@@ -35,8 +35,31 @@ client/
 ```
 
 ## Environment Setup
+
+### Database Setup (PostgreSQL)
+
+Run PostgreSQL in a Docker container:
+
+```bash
+docker run --name students \
+  -e POSTGRES_PASSWORD=passwd1 \
+  -p 5432:5432 \
+  -d postgres
+```
+
+This creates a PostgreSQL container named `students` with password `passwd1` on port `5432`.
+
+### Environment Variables
+
 Copy `.env.example` to `.env` in `server/` and set `DATABASE_URL` & `JWT_SECRET`.
 Copy `client/.env.example` to `client/.env` if you need to override API URL.
+
+**Example server `.env`:**
+```
+DATABASE_URL=postgresql://postgres:passwd1@localhost:5432/students
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+PORT=4000
+```
 
 ## Install & Run
 ```powershell

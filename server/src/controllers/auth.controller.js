@@ -87,3 +87,16 @@ export async function forgotPassword(req, res) {
   // Placeholder - integrate email service later
   return res.json({ message: 'If the email exists, password reset instructions will be sent.' });
 }
+
+export async function getSchools(req, res) {
+  try {
+    const schools = await prisma.school.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
+    });
+    res.json(schools);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
