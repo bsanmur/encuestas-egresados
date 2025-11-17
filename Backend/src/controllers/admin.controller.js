@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../lib/prisma.js" // Import prisma client
 
 /* ------------------- ALUMNI ------------------- */
 export async function listAlumni(req, res) {
@@ -183,83 +183,222 @@ export async function globalAnalytics(req, res) {
 
 /* ------------------- SURVEYS ------------------- */
 export async function createSurvey(req, res) {
-  const adminUserId = req.user.id;
-  const { title, description } = req.body;
-  if (!title) return res.status(400).json({ message: "title required" });
+  const adminUserId = req.user.id
+  const { title, description, program, year, deadline, questions } = req.body
+  if (!title) return res.status(400).json({ message: "title required" })
   try {
     const survey = await prisma.survey.create({
-      data: { title, description, createdById: adminUserId },
-    });
-    res.status(201).json(survey);
+      data: {
+        title,
+        description,
+        program,
+        year: year ? Number(year) : null,
+        deadline: deadline ? new Date(deadline) : null,
+        createdById: adminUserId,
+        questions: {
+          create:
+            questions?.map((q, idx) => ({
+              text: q.text,
+              type: q.type,
+              options: q.options || [],
+              order: idx,
+            })) || [],
+        },
+      },
+      include: { questions: true },
+    })
+
+    // Auto-assign to matching alumni
+    const whereClause = { isApproved: true }
+    if (program) whereClause.program = program
+    if (year) whereClause.graduationYear = Number(year)
+
+    const matchingAlumni = await prisma.alumniProfile.findMany({
+      where: whereClause,
+      select: { id: true },
+    })
+
+    if (matchingAlumni.length > 0) {
+      await prisma.surveyAssignment.createMany({
+        data: matchingAlumni.map((alumni) => ({
+          surveyId: survey.id,
+          alumniId: alumni.id,
+        })),
+      })
+    }
+
+    res.status(201).json(survey)
   } catch (e) {
-    console.error(e);
-    res.status(400).json({ message: "Create failed" });
+    console.error(e)
+    res.status(400).json({ message: "Create failed", error: e.message })
   }
 }
 
 export async function listSurveys(req, res) {
   try {
     const surveys = await prisma.survey.findMany({
-      include: { createdBy: { select: { id: true, email: true } } },
+      include: {
+        createdBy: { select: { email: true } },
+        _count: {
+          select: {
+            assignments: true,
+            questions: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
-    });
-    res.json(surveys);
+    })
+    res.json(surveys)
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: "Server error" });
+    console.error(e)
+    res.status(500).json({ message: "Server error" })
   }
 }
 
 export async function getSurvey(req, res) {
-  const { id } = req.params;
+  const { id } = req.params
   try {
     const survey = await prisma.survey.findUnique({
       where: { id },
-      include: { createdBy: { select: { id: true, email: true } } },
-    });
-    if (!survey) return res.status(404).json({ message: "Survey not found" });
-    res.json(survey);
+      include: {
+        questions: { orderBy: { order: "asc" } },
+        _count: {
+          select: {
+            assignments: true,
+          },
+        },
+      },
+    })
+    if (!survey) return res.status(404).json({ message: "Survey not found" })
+    res.json(survey)
   } catch (e) {
-    console.error(e);
-    res.status(400).json({ message: "Get failed" });
+    console.error(e)
+    res.status(500).json({ message: "Server error" })
   }
 }
 
 export async function updateSurvey(req, res) {
-  const { id } = req.params;
-  const { title, description } = req.body;
+  const { id } = req.params
+  const { title, description, program, year, deadline, questions } = req.body
   try {
-    const survey = await prisma.survey.update({
+    const updateData = {}
+    if (title !== undefined) updateData.title = title
+    if (description !== undefined) updateData.description = description
+    if (program !== undefined) updateData.program = program
+    if (year !== undefined) updateData.year = year ? Number(year) : null
+    if (deadline !== undefined) updateData.deadline = deadline ? new Date(deadline) : null
+
+    if (questions) {
+      // Delete existing questions and create new ones
+      await prisma.question.deleteMany({ where: { surveyId: id } })
+      updateData.questions = {
+        create: questions.map((q, idx) => ({
+          text: q.text,
+          type: q.type,
+          options: q.options || [],
+          order: idx,
+        })),
+      }
+    }
+
+    const updated = await prisma.survey.update({
       where: { id },
-      data: { title, description },
-    });
-    res.json(survey);
+      data: updateData,
+      include: { questions: { orderBy: { order: "asc" } } },
+    })
+    res.json(updated)
   } catch (e) {
-    console.error(e);
-    res.status(400).json({ message: "Update failed" });
+    console.error(e)
+    res.status(400).json({ message: "Update failed", error: e.message })
   }
 }
 
 export async function deleteSurvey(req, res) {
-  const { id } = req.params;
+  const { id } = req.params
   try {
-    const survey = await prisma.survey.delete({ where: { id } });
-    res.json({ success: true, deletedId: survey.id });
+    await prisma.survey.delete({ where: { id } })
+    res.json({ success: true, deletedId: id })
   } catch (e) {
-    console.error(e);
-    res.status(400).json({ message: "Delete failed" });
+    console.error(e)
+    res.status(400).json({ message: "Delete failed" })
   }
 }
 
 export async function getSurveyAnalytics(req, res) {
-  const { id } = req.params;
+  const { id } = req.params
   try {
-    const responses = await prisma.surveyResponse.count({
-      where: { surveyId: id },
-    });
-    res.json({ totalResponses: responses });
+    const survey = await prisma.survey.findUnique({
+      where: { id },
+      include: {
+        questions: {
+          include: {
+            responses: true,
+          },
+          orderBy: { order: "asc" },
+        },
+        assignments: true,
+      },
+    })
+
+    if (!survey) return res.status(404).json({ message: "Survey not found" })
+
+    const totalAssignments = survey.assignments.length
+    const completedAssignments = survey.assignments.filter((a) => a.completed).length
+    const participationRate = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0
+
+    const questionAnalytics = survey.questions.map((q) => {
+      const responses = q.responses
+      const analytics = {
+        id: q.id,
+        text: q.text,
+        type: q.type,
+        totalResponses: responses.length,
+      }
+
+      if (q.type === "RATING") {
+        const ratings = responses.map((r) => r.answerRating).filter((r) => r !== null)
+        const avg = ratings.length > 0 ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0
+        analytics.averageRating = Number.parseFloat(avg)
+      } else if (q.type === "MULTIPLE_CHOICE") {
+        const optionCounts = {}
+        q.options.forEach((opt) => (optionCounts[opt] = 0))
+        responses.forEach((r) => {
+          if (r.answerOption && optionCounts[r.answerOption] !== undefined) {
+            optionCounts[r.answerOption]++
+          }
+        })
+        analytics.distribution = Object.entries(optionCounts).map(([option, count]) => ({
+          option,
+          count,
+          percentage: responses.length > 0 ? Math.round((count / responses.length) * 100) : 0,
+        }))
+      } else if (q.type === "BOOLEAN") {
+        const trueCount = responses.filter((r) => r.answerBoolean === true).length
+        const falseCount = responses.filter((r) => r.answerBoolean === false).length
+        analytics.distribution = [
+          { option: "Yes", count: trueCount },
+          { option: "No", count: falseCount },
+        ]
+      } else if (q.type === "TEXT") {
+        analytics.responses = responses.map((r) => ({
+          text: r.answerText,
+          createdAt: r.createdAt,
+        }))
+      }
+
+      return analytics
+    })
+
+    res.json({
+      surveyId: survey.id,
+      title: survey.title,
+      totalAssignments,
+      completedAssignments,
+      participationRate,
+      questions: questionAnalytics,
+    })
   } catch (e) {
-    console.error(e);
-    res.status(400).json({ message: "Analytics failed" });
+    console.error(e)
+    res.status(500).json({ message: "Server error" })
   }
 }

@@ -46,7 +46,11 @@ export async function getMySurveys(req, res) {
       where: { alumniId: profile.id },
       include: {
         survey: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            deadline: true,
             _count: { select: { questions: true } },
           },
         },
@@ -79,8 +83,14 @@ export async function getSurveyForAlumni(req, res) {
       },
       include: {
         survey: {
-          include: {
-            questions: { orderBy: { order: "asc" } },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            deadline: true,
+            questions: {
+              orderBy: { order: "asc" },
+            },
           },
         },
       },

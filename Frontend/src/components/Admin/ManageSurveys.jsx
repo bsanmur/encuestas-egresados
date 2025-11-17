@@ -36,13 +36,21 @@ export default function ManageSurveys() {
     }
   }
 
-  async function handleToggleActive(id, currentStatus) {
-    try {
-      await adminService.updateSurvey(id, { isActive: !currentStatus })
-      loadSurveys()
-    } catch (err) {
-      alert(err?.response?.data?.message || "Failed to update survey")
-    }
+
+  function isSurveyActive(survey) {
+    if (!survey.deadline) return true // No deadline means always active
+    return new Date(survey.deadline) > new Date()
+  }
+
+  function formatDeadline(deadline) {
+    if (!deadline) return "No deadline"
+    return new Date(deadline).toLocaleString("es-MX", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   }
 
   if (loading) return <div className="p-4">Loading surveys...</div>
@@ -70,6 +78,7 @@ export default function ManageSurveys() {
                 <th className="border p-2 text-left">Title</th>
                 <th className="border p-2 text-left">Program</th>
                 <th className="border p-2 text-left">Year</th>
+                <th className="border p-2 text-left">Deadline</th>
                 <th className="border p-2 text-center">Status</th>
                 <th className="border p-2 text-center">Questions</th>
                 <th className="border p-2 text-center">Assignments</th>
@@ -82,19 +91,20 @@ export default function ManageSurveys() {
                   <td className="border p-2">{survey.title}</td>
                   <td className="border p-2">{survey.program || "All"}</td>
                   <td className="border p-2">{survey.year || "All"}</td>
+                  <td className="border p-2 text-sm">{formatDeadline(survey.deadline)}</td>
                   <td className="border p-2 text-center">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
-                        survey.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                        isSurveyActive(survey) ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {survey.isActive ? "Active" : "Inactive"}
+                      {isSurveyActive(survey) ? "Active" : "Expired"}
                     </span>
                   </td>
-                  <td className="border p-2 text-center">{survey._count.questions}</td>
-                  <td className="border p-2 text-center">{survey._count.assignments}</td>
+                  <td className="border p-2 text-center">{survey._count?.questions || 0}</td>
+                  <td className="border p-2 text-center">{survey._count?.assignments || 0}</td>
                   <td className="border p-2">
-                    <div className="flex gap-1 justify-center">
+                    <div className="flex gap-1 justify-center flex-wrap">
                       <button
                         onClick={() => navigate(`/admin/surveys/${survey.id}/analytics`)}
                         className="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600"
@@ -106,12 +116,6 @@ export default function ManageSurveys() {
                         className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600"
                       >
                         Edit
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(survey.id, survey.isActive)}
-                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
-                      >
-                        {survey.isActive ? "Deactivate" : "Activate"}
                       </button>
                       <button
                         onClick={() => handleDelete(survey.id)}
