@@ -6,6 +6,7 @@ import AdminDashboard from "./pages/AdminDashboard.jsx"
 import AlumniDashboard from "./pages/AlumniDashboard.jsx"
 import SchoolDashboard from "./pages/SchoolDashboard.jsx"
 import CreateSurveyPage from "./pages/CreateSurveyPage.jsx"
+import EditSurveyPage from "./pages/EditSurveyPage.jsx"
 import SurveyAnalyticsPage from "./pages/SurveyAnalyticsPage.jsx"
 import TakeSurveyPage from "./pages/TakeSurveyPage.jsx"
 import Unauthorized from "./pages/Unauthorized.jsx"
@@ -63,10 +64,10 @@ export default function App() {
             }
           />
           <Route
-            path="/admin/surveys/:surveyId/edit"
+            path="/admin/surveys/:id/edit"
             element={
               <ProtectedRoute roles={["ADMIN"]}>
-                <CreateSurveyPage />
+                <EditSurveyPage />
               </ProtectedRoute>
             }
           />

@@ -107,7 +107,9 @@ export default function TakeSurveyPage() {
     )
   }
 
-  if (!assignment.survey.isActive) {
+  const isExpired = assignment.survey.deadline && new Date(assignment.survey.deadline) < new Date()
+  
+  if (isExpired) {
     return (
       <div className="max-w-3xl mx-auto p-6">
         <div className="bg-gray-50 border border-gray-200 p-6 rounded text-center">

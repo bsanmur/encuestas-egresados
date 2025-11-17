@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { adminService } from "../services/admin"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
 const QUESTION_TYPES = [
   { value: "TEXT", label: "Text Response" },
@@ -18,9 +18,11 @@ const PROGRAMS = [
   "Maestría en Transformación Digital",
 ]
 
-export default function CreateSurveyPage() {
+export default function EditSurveyPage() {
   const navigate = useNavigate()
+  const { id } = useParams()
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState(null)
   const [formData, setFormData] = useState({
     title: "",
@@ -29,7 +31,38 @@ export default function CreateSurveyPage() {
     year: "",
     deadline: "",
   })
-  const [questions, setQuestions] = useState([{ text: "", type: "TEXT", options: [] }])
+  const [questions, setQuestions] = useState([])
+
+  useEffect(() => {
+    loadSurvey()
+  }, [id])
+
+  async function loadSurvey() {
+    try {
+      setInitialLoading(true)
+      const survey = await adminService.getSurvey(id)
+      
+      // Format deadline for datetime-local input
+      let deadlineStr = ""
+      if (survey.deadline) {
+        const d = new Date(survey.deadline)
+        deadlineStr = d.toISOString().slice(0, 16)
+      }
+
+      setFormData({
+        title: survey.title || "",
+        description: survey.description || "",
+        program: survey.program || "",
+        year: survey.year ? String(survey.year) : "",
+        deadline: deadlineStr,
+      })
+      setQuestions(survey.questions || [])
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to load survey")
+    } finally {
+      setInitialLoading(false)
+    }
+  }
 
   function handleAddQuestion() {
     setQuestions([...questions, { text: "", type: "TEXT", options: [] }])
@@ -56,6 +89,7 @@ export default function CreateSurveyPage() {
 
   function handleAddOption(qIndex) {
     const updated = [...questions]
+    if (!updated[qIndex].options) updated[qIndex].options = []
     updated[qIndex].options.push("")
     setQuestions(updated)
   }
@@ -84,7 +118,7 @@ export default function CreateSurveyPage() {
         setError("All questions must have text")
         return
       }
-      if (q.type === "MULTIPLE_CHOICE" && q.options.length < 2) {
+      if (q.type === "MULTIPLE_CHOICE" && (!q.options || q.options.length < 2)) {
         setError("Multiple choice questions need at least 2 options")
         return
       }
@@ -101,24 +135,32 @@ export default function CreateSurveyPage() {
         questions: questions.map((q) => ({
           text: q.text,
           type: q.type,
-          options: q.type === "MULTIPLE_CHOICE" ? q.options : [],
+          options: q.type === "MULTIPLE_CHOICE" ? (q.options || []) : [],
         })),
       }
-      await adminService.createSurvey(payload)
-      alert("Survey created successfully!")
+      await adminService.updateSurvey(id, payload)
+      alert("Survey updated successfully!")
       navigate("/admin")
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to create survey")
+      setError(err?.response?.data?.message || "Failed to update survey")
     } finally {
       setLoading(false)
     }
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-white rounded shadow p-6">Loading survey...</div>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded shadow p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold">Create New Survey</h1>
+          <h1 className="text-2xl font-semibold">Edit Survey</h1>
           <button onClick={() => navigate("/admin")} className="text-gray-600 hover:text-gray-800">
             Back to Dashboard
           </button>
@@ -180,7 +222,6 @@ export default function CreateSurveyPage() {
               </div>
             </div>
 
-            {/* Deadline Field */}
             <div>
               <label className="block text-sm font-medium mb-1">Deadline (optional)</label>
               <input
@@ -254,7 +295,7 @@ export default function CreateSurveyPage() {
                       <div>
                         <label className="block text-sm mb-2">Options</label>
                         <div className="space-y-2">
-                          {q.options.map((opt, optIndex) => (
+                          {(q.options || []).map((opt, optIndex) => (
                             <div key={optIndex} className="flex gap-2">
                               <input
                                 type="text"
@@ -296,7 +337,7 @@ export default function CreateSurveyPage() {
               disabled={loading}
               className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "Creating..." : "Create Survey"}
+              {loading ? "Updating..." : "Update Survey"}
             </button>
             <button
               type="button"

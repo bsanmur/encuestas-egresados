@@ -29,9 +29,16 @@ export default function MySurveys() {
   if (loading) return <div className="bg-white p-6 rounded shadow">Loading surveys...</div>
   if (error) return <div className="bg-white p-6 rounded shadow text-red-600">{error}</div>
 
-  const activeSurveys = assignments.filter((a) => a.survey.isActive && !a.completed)
+  const now = new Date()
+  const activeSurveys = assignments.filter((a) => {
+    const isActive = !a.survey.deadline || new Date(a.survey.deadline) > now
+    return isActive && !a.completed
+  })
   const completedSurveys = assignments.filter((a) => a.completed)
-  const inactiveSurveys = assignments.filter((a) => !a.survey.isActive && !a.completed)
+  const inactiveSurveys = assignments.filter((a) => {
+    const isActive = !a.survey.deadline || new Date(a.survey.deadline) > now
+    return !isActive && !a.completed
+  })
 
   return (
     <div className="bg-white p-6 rounded shadow">
