@@ -22,6 +22,7 @@ export default function CreateSurveyPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [sendEmail, setSendEmail] = useState(true)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -105,7 +106,27 @@ export default function CreateSurveyPage() {
         })),
       }
       await adminService.createSurvey(payload)
-      alert("Survey created successfully!")
+      
+      if (sendEmail) {
+        try {
+          const emailPayload = {}
+          if (formData.program.trim()) emailPayload.program = formData.program.trim()
+          if (formData.year.trim()) {
+            const parsed = Number(formData.year)
+            if (!Number.isNaN(parsed)) {
+              emailPayload.year = parsed
+            }
+          }
+          await adminService.sendNewsletter(emailPayload)
+          alert("Survey created and email notifications sent successfully!")
+        } catch (emailErr) {
+          console.error("Email sending error:", emailErr)
+          alert("Survey created successfully, but failed to send email notifications.")
+        }
+      } else {
+        alert("Survey created successfully!")
+      }
+      
       navigate("/admin")
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to create survey")
@@ -125,7 +146,23 @@ export default function CreateSurveyPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendEmail}
+                onChange={(e) => setSendEmail(e.target.checked)}
+                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <div>
+                <span className="font-medium text-gray-900">Send email notification automatically</span>
+                <p className="text-sm text-gray-600">
+                  When enabled, email notifications will be sent to alumni based on the program and year filters below immediately after creating the survey.
+                </p>
+              </div>
+            </label>
+          </div>
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Survey Title *</label>
@@ -180,7 +217,6 @@ export default function CreateSurveyPage() {
               </div>
             </div>
 
-            {/* Deadline Field */}
             <div>
               <label className="block text-sm font-medium mb-1">Deadline (optional)</label>
               <input
@@ -193,7 +229,6 @@ export default function CreateSurveyPage() {
             </div>
           </div>
 
-          {/* Questions */}
           <div className="border-t pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Questions</h2>
@@ -249,7 +284,6 @@ export default function CreateSurveyPage() {
                       </select>
                     </div>
 
-                    {/* Options for Multiple Choice */}
                     {q.type === "MULTIPLE_CHOICE" && (
                       <div>
                         <label className="block text-sm mb-2">Options</label>
@@ -296,7 +330,7 @@ export default function CreateSurveyPage() {
               disabled={loading}
               className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "Creating..." : "Create Survey"}
+              {loading ? "Creating..." : sendEmail ? "Create Survey & Send Emails" : "Create Survey"}
             </button>
             <button
               type="button"
