@@ -155,22 +155,34 @@ export async function assignUserToSchool(req, res) {
 export async function globalAnalytics(req, res) {
   try {
     const total = await prisma.alumniProfile.count();
+    
     const employed = await prisma.alumniProfile.count({
       where: { employmentStatus: "EMPLOYED" },
     });
+    
     const employmentRate = total > 0 ? Math.round((employed / total) * 100) : 0;
 
     let topSectors = [];
     if (total > 0) {
-      const programs = await prisma.alumniProfile.groupBy({
-        by: ["program"],
-        _count: { _all: true },
-        orderBy: { _count: { _all: "desc" } },
+      const companies = await prisma.alumniProfile.groupBy({
+        by: ["currentCompany"],
+        _count: true,
+        where: {
+          currentCompany: {
+            not: null,
+          },
+        },
+        orderBy: { 
+          _count: {
+            currentCompany: "desc"
+          } 
+        },
         take: 5,
       });
-      topSectors = programs.map((m) => ({
-        name: m.program || "Unknown",
-        count: m._count._all,
+      
+      topSectors = companies.map((c) => ({
+        name: c.currentCompany || "Unknown",
+        count: c._count,
       }));
     }
 
