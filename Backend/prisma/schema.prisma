@@ -55,6 +55,7 @@ model AlumniProfile {
   school           School          @relation(fields: [schoolId], references: [id])
   schoolId         String
   isApproved       Boolean         @default(false)
+  isSubscribed     Boolean         @default(true)
   surveyAssignments SurveyAssignment[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt

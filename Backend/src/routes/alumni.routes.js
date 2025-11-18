@@ -1,22 +1,29 @@
-import { Router } from "express"
-import { authMiddleware, requireRole } from "../middleware/auth.js"
+import { Router } from 'express';
+import { authMiddleware, requireRole } from '../middleware/auth.js';
 import {
   getMyProfile,
   updateMyProfile,
+  updateSubscription,
   getMySurveys,
   getSurveyForAlumni,
   submitSurveyResponse,
-} from "../controllers/alumni.controller.js"
+} from '../controllers/alumni.controller.js';
 
-const router = Router()
+const router = Router();
 
-router.use(authMiddleware, requireRole("ALUMNI"))
+// All routes require ALUMNI authentication
+router.use(authMiddleware, requireRole('ALUMNI'));
 
-router.get("/profile/me", getMyProfile)
-router.put("/profile/me", updateMyProfile)
+// Profile routes
+router.get('/profile', getMyProfile);
+router.put('/profile', updateMyProfile);
 
-router.get("/surveys", getMySurveys)
-router.get("/surveys/:surveyId", getSurveyForAlumni)
-router.post("/surveys/:surveyId/submit", submitSurveyResponse)
+// Subscription management
+router.put('/subscribe', updateSubscription);
 
-export default router
+// Survey routes
+router.get('/surveys', getMySurveys);
+router.get('/surveys/:surveyId', getSurveyForAlumni);
+router.post('/surveys/:surveyId/submit', submitSurveyResponse);
+
+export default router;

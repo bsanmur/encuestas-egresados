@@ -5,7 +5,7 @@ import { transporter } from "../lib/mailer.js";
 export async function getSubscribers(req, res) {
   // Query parameters for segmentation: ?program=Informatica&year=2010
   const { program, year } = req.query;
-  // const where = { isSubscribed: true };
+  const where = { isApproved: true, isSubscribed: true };
 
   if (program) where.program = program;
   if (year) {
@@ -14,15 +14,17 @@ export async function getSubscribers(req, res) {
   }
 
   try {
-    const subscribers = await prisma.alumnus.findMany({
+    const subscribers = await prisma.alumniProfile.findMany({
       where,
       select: {
-        firstName: true,
-        lastName: true,
-        email: true,
-        matricula: true,
+        fullName: true,
         program: true,
         graduationYear: true,
+        user: {
+          select: {
+            email: true
+          }
+        }
       },
     });
 
@@ -49,7 +51,7 @@ export async function sendNewsletter(req, res) {
     <p>Please click the following link to access the survey: <a href="${surveyLink}">${surveyLink}</a></p>
   `;
 
-  const where = { isApproved: true };
+  const where = { isApproved: true, isSubscribed: true };
   
   if (program) where.program = program;
   
@@ -85,7 +87,7 @@ export async function sendNewsletter(req, res) {
 
     const subscriberEmails = subscribers
       .map((s) => s.user.email)
-      .filter(Boolean) // Filtrar emails nulos o undefined
+      .filter(Boolean)
       .join(",");
 
     if (!subscriberEmails) {

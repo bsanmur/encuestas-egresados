@@ -34,6 +34,36 @@ export async function updateMyProfile(req, res) {
   }
 }
 
+// PUT /api/alumni/subscribe (Protected)
+export async function updateSubscription(req, res) {
+  const { isSubscribed } = req.body;
+  if (typeof isSubscribed !== "boolean") {
+    return res
+      .status(400)
+      .json({ message: "isSubscribed must be a boolean value." });
+  }
+
+  try {
+    const userId = req.user.id;
+
+    const profile = await prisma.alumniProfile.update({
+      where: { userId },
+      data: { isSubscribed },
+      select: { isSubscribed: true },
+    });
+
+    res.json({
+      message: `Subscription status updated to: ${
+        isSubscribed ? "Subscribed" : "Unsubscribed"
+      }`,
+      isSubscribed: profile.isSubscribed,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating subscription status." });
+  }
+}
+
 export async function getMySurveys(req, res) {
   const userId = req.user.id
   try {
