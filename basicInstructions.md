@@ -1,21 +1,13 @@
 # Basic Instructions For Running
 
-## Database Setup
-
-```bash
-docker run --name students -e POSTGRES_PASSWORD=passwd1 -p 5432:5432 -d postgres
-```
-
 ## .ENV Backend File Configuration
 
 This project requires a `.env` file in the backend directory.  
 Below is the full configuration template and instructions for setting it up correctly.
 
----
-
 ### `.env` Template
 
-Copy the following into your `.env` file:
+Copy the following into your `.env` file (.env.example en directory) if you wish to only make a copy:
 
 ```env
 # Database Connection
@@ -59,3 +51,72 @@ Use this value (without spaces) in your '.env' file as:
 ```bash
 EMAIL_PASS=abcdefghijklmnop
 ```
+
+## Database Setup
+
+```bash
+docker run --name students -e POSTGRES_PASSWORD=passwd1 -p 5432:5432 -d postgres
+```
+
+### Install & Run
+
+```bash
+# Server
+cd Backend
+npm install
+npx prisma generate
+# (Optional) create initial migration
+npx prisma migrate dev --name init
+npm run dev
+
+# Client (in new terminal)
+cd Frontend
+npm install
+npm run dev
+```
+
+Access client at http://localhost:5173 and API at http://localhost:4000/api.
+
+#### 1. Create Admin User
+
+After setting up the database, create your first administrator account:
+
+```bash
+cd Backend
+npm run seed:admin
+```
+
+**Default credentials:**
+
+- Email: `admin@example.com`
+- Password: `admin123`
+
+**Custom credentials:**
+You can set custom credentials in `Backend/.env`:
+
+```env
+ADMIN_EMAIL=your-admin@example.com
+ADMIN_PASSWORD=your-secure-password
+```
+
+#### 2. Seed Schools (Optional)
+
+To populate the database with sample schools:
+
+```bash
+cd server
+npm run seed:schools
+```
+
+This creates 5 sample schools that can be used for alumni registration.
+
+#### Available Scripts
+
+**Server scripts:**
+
+- `npm run dev` - Start development server
+- `npm run start` - Start production server
+- `npm run seed:admin` - Create admin user
+- `npm run seed:schools` - Seed sample schools
+- `npm run prisma:generate` - Generate Prisma client
+- `npm run prisma:migrate` - Run database migrations
